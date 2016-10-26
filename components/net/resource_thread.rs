@@ -19,11 +19,10 @@ use filemanager_thread::{FileManager, TFDProvider};
 use hsts::HstsList;
 use http_loader::{self, HttpState};
 use hyper::client::pool::Pool;
-use hyper::header::{ContentType, Header, SetCookie};
-use hyper::mime::{Mime, SubLevel, TopLevel};
+use hyper::header::{Header, SetCookie};
 use hyper_serde::Serde;
 use ipc_channel::ipc::{self, IpcReceiver, IpcReceiverSet, IpcSender};
-use mime_classifier::{ApacheBugFlag, MimeClassifier, NoSniffFlag};
+use mime_classifier::MimeClassifier;
 use net_traits::{AsyncResponseTarget, CoreResourceThread, Metadata, ProgressMsg, ResponseAction};
 use net_traits::{CookieSource, CoreResourceMsg, FetchResponseMsg, FetchTaskTarget, LoadConsumer};
 use net_traits::{CustomResponseMediator, LoadData, LoadResponse, NetworkError, ResourceId};
@@ -49,7 +48,6 @@ use std::sync::{Arc, RwLock};
 use std::sync::mpsc::{Receiver, Sender, channel};
 use storage_thread::StorageThreadFactory;
 use url::Url;
-use util::prefs::PREFS;
 use util::thread::spawn_named;
 use websocket_loader;
 
@@ -95,41 +93,10 @@ pub fn send_error(url: Url, err: NetworkError, start_chan: LoadConsumer) {
 }
 
 /// For use by loaders in responding to a Load message that allows content sniffing.
-pub fn start_sending_sniffed_opt(start_chan: LoadConsumer, mut metadata: Metadata,
-                                 classifier: Arc<MimeClassifier>, partial_body: &[u8],
-                                 context: LoadContext)
+pub fn start_sending_sniffed_opt(start_chan: LoadConsumer, metadata: Metadata,
+                                 _classifier: Arc<MimeClassifier>, _partial_body: &[u8],
+                                 _context: LoadContext)
                                  -> Result<ProgressSender, ()> {
-    if PREFS.get("network.mime.sniff").as_boolean().unwrap_or(false) {
-        // TODO: should be calculated in the resource loader, from pull requeset #4094
-        let mut no_sniff = NoSniffFlag::Off;
-        let mut check_for_apache_bug = ApacheBugFlag::Off;
-
-        if let Some(ref headers) = metadata.headers {
-            if let Some(ref content_type) = headers.get_raw("content-type").and_then(|c| c.last()) {
-                check_for_apache_bug = ApacheBugFlag::from_content_type(content_type)
-            }
-            if let Some(ref raw_content_type_options) = headers.get_raw("X-content-type-options") {
-                if raw_content_type_options.iter().any(|ref opt| *opt == b"nosniff") {
-                    no_sniff = NoSniffFlag::On
-                }
-            }
-        }
-
-        let supplied_type =
-            metadata.content_type.as_ref().map(|&Serde(ContentType(Mime(ref toplevel, ref sublevel, _)))| {
-            (toplevel.to_owned(), format!("{}", sublevel))
-        });
-        let (toplevel, sublevel) = classifier.classify(context,
-                                                       no_sniff,
-                                                       check_for_apache_bug,
-                                                       &supplied_type,
-                                                       &partial_body);
-        let mime_tp: TopLevel = toplevel.into();
-        let mime_sb: SubLevel = sublevel.parse().unwrap();
-        metadata.content_type =
-            Some(Serde(ContentType(Mime(mime_tp, mime_sb, vec![]))));
-    }
-
     start_sending_opt(start_chan, metadata, None)
 }
 
