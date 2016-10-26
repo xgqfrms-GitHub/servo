@@ -15,13 +15,13 @@ use url::percent_encoding::percent_decode;
 
 pub fn factory(load_data: LoadData,
                senders: LoadConsumer,
-               classifier: Arc<MimeClassifier>,
+               _classifier: Arc<MimeClassifier>,
                cancel_listener: CancellationListener) {
     // NB: we don't spawn a new thread.
     // Hypothesis: data URLs are too small for parallel base64 etc. to be worth it.
     // Should be tested at some point.
     // Left in separate function to allow easy moving to a thread, if desired.
-    load(load_data, senders, classifier, cancel_listener)
+    load(load_data, senders, cancel_listener)
 }
 
 pub enum DecodeError {
@@ -72,7 +72,6 @@ pub fn decode(url: &Url) -> Result<DecodeData, DecodeError> {
 
 pub fn load(load_data: LoadData,
             start_chan: LoadConsumer,
-            _classifier: Arc<MimeClassifier>,
             cancel_listener: CancellationListener) {
     let url = load_data.url;
 
