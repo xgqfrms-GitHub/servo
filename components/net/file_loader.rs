@@ -68,8 +68,9 @@ fn read_all(reader: &mut File, progress_chan: &ProgressSender, cancel_listener: 
     Ok(LoadResult::Cancelled)
 }
 
-fn get_progress_chan(load_data: LoadData, file_path: &Path,
-                     senders: LoadConsumer, _classifier: Arc<MimeClassifier>, _buf: &[u8])
+fn get_progress_chan(load_data: LoadData,
+                     file_path: &Path,
+                     senders: LoadConsumer)
                      -> Result<ProgressSender, ()> {
     let mut metadata = Metadata::default(load_data.url);
     let mime_type = guess_mime_type(file_path);
@@ -106,7 +107,7 @@ pub fn factory(load_data: LoadData,
 
         if cancel_listener.is_cancelled() {
             if let Ok(progress_chan) = get_progress_chan(load_data, &file_path,
-                                                         senders, classifier, &[]) {
+                                                         senders) {
                 let _ = progress_chan.send(Done(Err(NetworkError::LoadCancelled)));
             }
             return;
@@ -115,7 +116,7 @@ pub fn factory(load_data: LoadData,
         match read_block(reader) {
             Ok(ReadStatus::Partial(buf)) => {
                 let progress_chan = get_progress_chan(load_data, &file_path,
-                                                      senders, classifier, &buf).ok().unwrap();
+                                                      senders).ok().unwrap();
                 progress_chan.send(Payload(buf)).unwrap();
                 let read_result = read_all(reader, &progress_chan, &cancel_listener);
                 if let Ok(load_result) = read_result {
@@ -127,7 +128,7 @@ pub fn factory(load_data: LoadData,
             }
             Ok(ReadStatus::EOF) => {
                 if let Ok(chan) = get_progress_chan(load_data, &file_path,
-                                                    senders, classifier, &[]) {
+                                                    senders) {
                     let _ = chan.send(Done(Ok(())));
                 }
             }
