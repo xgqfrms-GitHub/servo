@@ -26,16 +26,15 @@ use util::thread::spawn_named;
 
 pub fn factory<UI: 'static + UIProvider>(filemanager: FileManager<UI>)
               -> Box<FnBox(LoadData, LoadConsumer, Arc<MimeClassifier>, CancellationListener) + Send> {
-    box move |load_data: LoadData, start_chan, classifier, cancel_listener| {
+    box move |load_data: LoadData, start_chan, _classifier, cancel_listener| {
         spawn_named(format!("blob loader for {}", load_data.url), move || {
-            load_blob(load_data, start_chan, classifier, filemanager, cancel_listener);
+            load_blob(load_data, start_chan, filemanager, cancel_listener);
         })
     }
 }
 
 fn load_blob<UI: 'static + UIProvider>
             (load_data: LoadData, start_chan: LoadConsumer,
-             _classifier: Arc<MimeClassifier>,
              filemanager: FileManager<UI>,
              cancel_listener: CancellationListener) {
     let (chan, recv) = ipc::channel().unwrap();
