@@ -10,7 +10,7 @@ use mime_classifier::MimeClassifier;
 use net_traits::{LoadConsumer, LoadData, Metadata, NetworkError};
 use net_traits::ProgressMsg::Done;
 use net_traits::response::HttpsState;
-use resource_thread::{CancellationListener, send_error, start_sending_sniffed_opt};
+use resource_thread::{CancellationListener, send_error, start_sending_opt};
 use std::io;
 use std::sync::Arc;
 use url::Url;
@@ -41,11 +41,7 @@ pub fn factory(mut load_data: LoadData,
                 https_state: HttpsState::None,
                 referrer: None,
             };
-            if let Ok(chan) = start_sending_sniffed_opt(start_chan,
-                                                        metadata,
-                                                        classifier,
-                                                        &[],
-                                                        load_data.context) {
+            if let Ok(chan) = start_sending_opt(start_chan, metadata, None) {
                 let _ = chan.send(Done(Ok(())));
             }
             return

@@ -9,7 +9,7 @@ use msg::constellation_msg::{PipelineId, ReferrerPolicy};
 use net_traits::{LoadConsumer, LoadData, LoadOrigin, Metadata, NetworkError};
 use net_traits::ProgressMsg::{Done, Payload};
 use resource_thread::{CancellationListener, ProgressSender};
-use resource_thread::{send_error, start_sending_sniffed_opt};
+use resource_thread::{send_error, start_sending_opt};
 use std::borrow::ToOwned;
 use std::error::Error;
 use std::fs::File;
@@ -69,12 +69,12 @@ fn read_all(reader: &mut File, progress_chan: &ProgressSender, cancel_listener: 
 }
 
 fn get_progress_chan(load_data: LoadData, file_path: &Path,
-                     senders: LoadConsumer, classifier: Arc<MimeClassifier>, buf: &[u8])
+                     senders: LoadConsumer, _classifier: Arc<MimeClassifier>, _buf: &[u8])
                      -> Result<ProgressSender, ()> {
     let mut metadata = Metadata::default(load_data.url);
     let mime_type = guess_mime_type(file_path);
     metadata.set_content_type(Some(&mime_type));
-    return start_sending_sniffed_opt(senders, metadata, classifier, buf, load_data.context);
+    start_sending_opt(senders, metadata, None)
 }
 
 pub fn factory(load_data: LoadData,

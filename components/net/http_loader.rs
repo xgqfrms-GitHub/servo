@@ -38,7 +38,7 @@ use openssl;
 use openssl::ssl::error::{OpensslError, SslError};
 use profile_traits::time::{ProfilerCategory, ProfilerChan, TimerMetadata, profile};
 use profile_traits::time::{TimerMetadataFrameType, TimerMetadataReflowType};
-use resource_thread::{AuthCache, AuthCacheEntry, CancellationListener, send_error, start_sending_sniffed_opt};
+use resource_thread::{AuthCache, AuthCacheEntry, CancellationListener, send_error, start_sending_opt};
 use std::borrow::{Cow, ToOwned};
 use std::boxed::FnBox;
 use std::collections::HashSet;
@@ -1112,18 +1112,18 @@ pub fn load<A, B>(load_data: &LoadData,
     }
 }
 
-fn send_data<R: Read>(context: LoadContext,
+fn send_data<R: Read>(_context: LoadContext,
                       reader: &mut R,
                       start_chan: LoadConsumer,
                       metadata: Metadata,
-                      classifier: Arc<MimeClassifier>,
+                      _classifier: Arc<MimeClassifier>,
                       cancel_listener: &CancellationListener) {
     let (progress_chan, mut chunk) = {
         let buf = match read_block(reader) {
             Ok(ReadResult::Payload(buf)) => buf,
             _ => vec!(),
         };
-        let p = match start_sending_sniffed_opt(start_chan, metadata, classifier, &buf, context) {
+        let p = match start_sending_opt(start_chan, metadata, None) {
             Ok(p) => p,
             _ => return
         };

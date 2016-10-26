@@ -27,7 +27,6 @@ use net_traits::{AsyncResponseTarget, CoreResourceThread, Metadata, ProgressMsg,
 use net_traits::{CookieSource, CoreResourceMsg, FetchResponseMsg, FetchTaskTarget, LoadConsumer};
 use net_traits::{CustomResponseMediator, LoadData, LoadResponse, NetworkError, ResourceId};
 use net_traits::{ResourceThreads, WebSocketCommunicate, WebSocketConnectData};
-use net_traits::LoadContext;
 use net_traits::ProgressMsg::Done;
 use net_traits::request::{Request, RequestInit};
 use net_traits::storage_thread::StorageThreadMsg;
@@ -92,19 +91,11 @@ pub fn send_error(url: Url, err: NetworkError, start_chan: LoadConsumer) {
     }
 }
 
-/// For use by loaders in responding to a Load message that allows content sniffing.
-pub fn start_sending_sniffed_opt(start_chan: LoadConsumer, metadata: Metadata,
-                                 _classifier: Arc<MimeClassifier>, _partial_body: &[u8],
-                                 _context: LoadContext)
-                                 -> Result<ProgressSender, ()> {
-    start_sending_opt(start_chan, metadata, None)
-}
-
 /// For use by loaders in responding to a Load message.
 /// It takes an optional NetworkError, so that we can extract the SSL Validation errors
 /// and take it to the HTML parser
-fn start_sending_opt(start_chan: LoadConsumer, metadata: Metadata,
-                     network_error: Option<NetworkError>) -> Result<ProgressSender, ()> {
+pub fn start_sending_opt(start_chan: LoadConsumer, metadata: Metadata,
+                         network_error: Option<NetworkError>) -> Result<ProgressSender, ()> {
     match start_chan {
         LoadConsumer::Channel(start_chan) => {
             let (progress_chan, progress_port) = ipc::channel().unwrap();

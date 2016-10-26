@@ -14,7 +14,7 @@ use net_traits::ProgressMsg::{Done, Payload};
 use net_traits::blob_url_store::parse_blob_url;
 use net_traits::filemanager_thread::{FileManagerThreadMsg, ReadFileProgress};
 use net_traits::response::HttpsState;
-use resource_thread::{send_error, start_sending_sniffed_opt};
+use resource_thread::{send_error, start_sending_opt};
 use resource_thread::CancellationListener;
 use std::boxed::FnBox;
 use std::sync::Arc;
@@ -35,7 +35,7 @@ pub fn factory<UI: 'static + UIProvider>(filemanager: FileManager<UI>)
 
 fn load_blob<UI: 'static + UIProvider>
             (load_data: LoadData, start_chan: LoadConsumer,
-             classifier: Arc<MimeClassifier>,
+             _classifier: Arc<MimeClassifier>,
              filemanager: FileManager<UI>,
              cancel_listener: CancellationListener) {
     let (chan, recv) = ipc::channel().unwrap();
@@ -77,9 +77,7 @@ fn load_blob<UI: 'static + UIProvider>
                     referrer: None,
                 };
 
-                if let Ok(chan) =
-                    start_sending_sniffed_opt(start_chan, metadata, classifier,
-                                              &blob_buf.bytes, load_data.context.clone()) {
+                if let Ok(chan) = start_sending_opt(start_chan, metadata, None) {
                     let _ = chan.send(Payload(blob_buf.bytes));
 
                     loop {

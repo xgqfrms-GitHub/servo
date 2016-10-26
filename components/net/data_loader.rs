@@ -7,7 +7,7 @@ use mime_classifier::MimeClassifier;
 use net_traits::{LoadData, Metadata, NetworkError};
 use net_traits::LoadConsumer;
 use net_traits::ProgressMsg::{Done, Payload};
-use resource_thread::{CancellationListener, send_error, start_sending_sniffed_opt};
+use resource_thread::{CancellationListener, send_error, start_sending_opt};
 use rustc_serialize::base64::FromBase64;
 use std::sync::Arc;
 use url::{Position, Url};
@@ -72,7 +72,7 @@ pub fn decode(url: &Url) -> Result<DecodeData, DecodeError> {
 
 pub fn load(load_data: LoadData,
             start_chan: LoadConsumer,
-            classifier: Arc<MimeClassifier>,
+            _classifier: Arc<MimeClassifier>,
             cancel_listener: CancellationListener) {
     let url = load_data.url;
 
@@ -84,11 +84,7 @@ pub fn load(load_data: LoadData,
         Ok((content_type, bytes)) => {
             let mut metadata = Metadata::default(url);
             metadata.set_content_type(Some(content_type).as_ref());
-            if let Ok(chan) = start_sending_sniffed_opt(start_chan,
-                                                metadata,
-                                                classifier,
-                                                &bytes,
-                                                load_data.context) {
+            if let Ok(chan) = start_sending_opt(start_chan, metadata, None) {
                 let _ = chan.send(Payload(bytes));
                 let _ = chan.send(Done(Ok(())));
             }
