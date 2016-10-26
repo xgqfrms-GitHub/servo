@@ -67,7 +67,7 @@ pub fn factory(user_agent: Cow<'static, str>,
                             LoadConsumer,
                             Arc<MimeClassifier>,
                             CancellationListener) + Send> {
-    box move |load_data: LoadData, senders, classifier, cancel_listener| {
+    box move |load_data: LoadData, senders, _classifier, cancel_listener| {
         spawn_named(format!("http_loader for {}", load_data.url), move || {
             let metadata = TimerMetadata {
                 url: load_data.url.as_str().into(),
@@ -77,7 +77,6 @@ pub fn factory(user_agent: Cow<'static, str>,
             profile(ProfilerCategory::NetHTTPRequestResponse, Some(metadata), profiler_chan, || {
                 load_for_consumer(load_data,
                                   senders,
-                                  classifier,
                                   connector,
                                   http_state,
                                   devtools_chan,
@@ -131,7 +130,6 @@ fn precise_time_ms() -> u64 {
 
 fn load_for_consumer(load_data: LoadData,
                      start_chan: LoadConsumer,
-                     classifier: Arc<MimeClassifier>,
                      connector: Arc<Pool<Connector>>,
                      http_state: HttpState,
                      devtools_chan: Option<Sender<DevtoolsControlMsg>>,
@@ -158,7 +156,7 @@ fn load_for_consumer(load_data: LoadData,
         }
         Ok(mut load_response) => {
             let metadata = load_response.metadata.clone();
-            send_data(load_data.context, &mut load_response, start_chan, metadata, classifier, &cancel_listener)
+            send_data(&mut load_response, start_chan, metadata, &cancel_listener)
         }
     }
 }
@@ -1112,11 +1110,9 @@ pub fn load<A, B>(load_data: &LoadData,
     }
 }
 
-fn send_data<R: Read>(_context: LoadContext,
-                      reader: &mut R,
+fn send_data<R: Read>(reader: &mut R,
                       start_chan: LoadConsumer,
                       metadata: Metadata,
-                      _classifier: Arc<MimeClassifier>,
                       cancel_listener: &CancellationListener) {
     let (progress_chan, mut chunk) = {
         let buf = match read_block(reader) {
