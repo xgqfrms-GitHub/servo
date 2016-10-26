@@ -6,7 +6,7 @@ use font_template::{FontTemplate, FontTemplateDescriptor};
 use fontsan;
 use ipc_channel::ipc::{self, IpcReceiver, IpcSender};
 use ipc_channel::router::ROUTER;
-use mime::{TopLevel, SubLevel};
+use mime::{Mime, TopLevel, SubLevel};
 use net_traits::{AsyncResponseTarget, LoadContext, CoreResourceThread, ResponseAction, load_async};
 use platform::font_context::FontContextHandle;
 use platform::font_list::SANS_SERIF_FONT_FAMILY;
@@ -25,7 +25,6 @@ use string_cache::Atom;
 use style::font_face::{EffectiveSources, Source};
 use style::properties::longhands::font_family::computed_value::FontFamily;
 use url::Url;
-use util::prefs::PREFS;
 use util::thread::spawn_named;
 use webrender_traits;
 
@@ -227,20 +226,9 @@ impl FontCache {
                     let response: ResponseAction = message.to().unwrap();
                     match response {
                         ResponseAction::HeadersAvailable(meta_result) => {
-                            let is_response_valid = match meta_result {
-                                Ok(ref metadata) => {
-                                    metadata.content_type.as_ref().map_or(false, |content_type| {
-                                        let mime = &content_type.0;
-                                        is_supported_font_type(&(mime.0).0, &mime.1)
-                                    })
-                                }
-                                Err(_) => false,
-                            };
-
-                            info!("{} font with MIME type {}",
-                                  if is_response_valid { "Loading" } else { "Ignoring" },
-                                  meta_result.map(|ref meta| format!("{:?}", meta.content_type))
-                                             .unwrap_or(format!("<Network Error>")));
+                            let is_response_valid = meta_result.ok().map_or(false, |m| {
+                                !is_xml(&m.content_type.map(|c| (c.0).0))
+                            });
                             *response_valid.lock().unwrap() = is_response_valid;
                         }
                         ResponseAction::DataAvailable(new_bytes) => {
@@ -480,21 +468,11 @@ impl FontCacheThread {
     }
 }
 
-// derived from http://stackoverflow.com/a/10864297/3830
-fn is_supported_font_type(toplevel: &TopLevel, sublevel: &SubLevel) -> bool {
-    if !PREFS.get("network.mime.sniff").as_boolean().unwrap_or(false) {
-        return true;
-    }
-
-    match (toplevel, sublevel) {
-        (&TopLevel::Application, &SubLevel::Ext(ref ext)) => {
-            match &ext[..] {
-                //FIXME: once sniffing is enabled by default, we shouldn't need nonstandard
-                //       MIME types here.
-                "font-sfnt" | "x-font-ttf" | "x-font-truetype" | "x-font-opentype" => true,
-                _ => false,
-            }
-        }
+fn is_xml(mime: &Option<Mime>) -> bool {
+    match *mime {
+        Some(Mime(TopLevel::Application, SubLevel::Xml, _)) |
+        Some(Mime(TopLevel::Text, SubLevel::Xml, _)) => true,
+        Some(Mime(_, ref sub, _)) if sub.ends_with("+xml") => true,
         _ => false,
     }
 }
