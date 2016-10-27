@@ -22,7 +22,6 @@ use hyper::client::pool::Pool;
 use hyper::header::{Header, SetCookie};
 use hyper_serde::Serde;
 use ipc_channel::ipc::{self, IpcReceiver, IpcReceiverSet, IpcSender};
-use mime_classifier::MimeClassifier;
 use net_traits::{AsyncResponseTarget, CoreResourceThread, Metadata, ProgressMsg, ResponseAction};
 use net_traits::{CookieSource, CoreResourceMsg, FetchResponseMsg, FetchTaskTarget, LoadConsumer};
 use net_traits::{CustomResponseMediator, LoadData, LoadResponse, NetworkError, ResourceId};
@@ -429,7 +428,6 @@ pub struct AuthCache {
 
 pub struct CoreResourceManager {
     user_agent: Cow<'static, str>,
-    _mime_classifier: Arc<MimeClassifier>,
     devtools_chan: Option<Sender<DevtoolsControlMsg>>,
     swmanager_chan: Option<IpcSender<CustomResponseMediator>>,
     profiler_chan: ProfilerChan,
@@ -444,7 +442,6 @@ impl CoreResourceManager {
                profiler_chan: ProfilerChan) -> CoreResourceManager {
         CoreResourceManager {
             user_agent: user_agent,
-            _mime_classifier: Arc::new(MimeClassifier::new()),
             devtools_chan: devtools_channel,
             swmanager_chan: None,
             profiler_chan: profiler_chan,
