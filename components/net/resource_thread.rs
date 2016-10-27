@@ -429,7 +429,7 @@ pub struct AuthCache {
 
 pub struct CoreResourceManager {
     user_agent: Cow<'static, str>,
-    mime_classifier: Arc<MimeClassifier>,
+    _mime_classifier: Arc<MimeClassifier>,
     devtools_chan: Option<Sender<DevtoolsControlMsg>>,
     swmanager_chan: Option<IpcSender<CustomResponseMediator>>,
     profiler_chan: ProfilerChan,
@@ -444,7 +444,7 @@ impl CoreResourceManager {
                profiler_chan: ProfilerChan) -> CoreResourceManager {
         CoreResourceManager {
             user_agent: user_agent,
-            mime_classifier: Arc::new(MimeClassifier::new()),
+            _mime_classifier: Arc::new(MimeClassifier::new()),
             devtools_chan: devtools_channel,
             swmanager_chan: None,
             profiler_chan: profiler_chan,
@@ -484,13 +484,12 @@ impl CoreResourceManager {
             id_sender: Option<IpcSender<ResourceId>>,
             resource_thread: CoreResourceThread,
             resource_grp: &ResourceGroup) {
-        fn from_factory(factory: fn(LoadData, LoadConsumer, Arc<MimeClassifier>, CancellationListener))
+        fn from_factory(factory: fn(LoadData, LoadConsumer, CancellationListener))
                         -> Box<FnBox(LoadData,
                                      LoadConsumer,
-                                     Arc<MimeClassifier>,
                                      CancellationListener) + Send> {
-            box move |load_data, senders, classifier, cancel_listener| {
-                factory(load_data, senders, classifier, cancel_listener)
+            box move |load_data, senders, cancel_listener| {
+                factory(load_data, senders, cancel_listener)
             }
         }
 
@@ -534,7 +533,6 @@ impl CoreResourceManager {
 
         loader.call_box((load_data,
                          consumer,
-                         self.mime_classifier.clone(),
                          cancel_listener));
     }
 

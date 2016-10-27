@@ -3,11 +3,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 use file_loader;
-use mime_classifier::MimeClassifier;
 use net_traits::{LoadConsumer, LoadData, NetworkError};
 use resource_thread::{CancellationListener, send_error};
 use std::fs::canonicalize;
-use std::sync::Arc;
 use url::Url;
 use url::percent_encoding::percent_decode;
 use util::resource_files::resources_dir_path;
@@ -37,7 +35,6 @@ pub fn resolve_chrome_url(url: &Url) -> Result<Url, ()> {
 
 pub fn factory(mut load_data: LoadData,
                start_chan: LoadConsumer,
-               classifier: Arc<MimeClassifier>,
                cancel_listener: CancellationListener) {
     let file_url = match resolve_chrome_url(&load_data.url) {
         Ok(url) => url,
@@ -49,5 +46,5 @@ pub fn factory(mut load_data: LoadData,
         }
     };
     load_data.url = file_url;
-    file_loader::factory(load_data, start_chan, classifier, cancel_listener)
+    file_loader::factory(load_data, start_chan, cancel_listener)
 }

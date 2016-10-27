@@ -8,7 +8,6 @@ use hyper::header::{ContentDisposition, DispositionParam, DispositionType};
 use hyper_serde::Serde;
 use ipc_channel::ipc;
 use mime::{Attr, Mime};
-use mime_classifier::MimeClassifier;
 use net_traits::{LoadConsumer, LoadData, Metadata, NetworkError};
 use net_traits::ProgressMsg::{Done, Payload};
 use net_traits::blob_url_store::parse_blob_url;
@@ -17,7 +16,6 @@ use net_traits::response::HttpsState;
 use resource_thread::{send_error, start_sending_opt};
 use resource_thread::CancellationListener;
 use std::boxed::FnBox;
-use std::sync::Arc;
 use url::Url;
 use util::thread::spawn_named;
 
@@ -25,8 +23,8 @@ use util::thread::spawn_named;
 // https://w3c.github.io/FileAPI/#requestResponseModel
 
 pub fn factory<UI: 'static + UIProvider>(filemanager: FileManager<UI>)
-              -> Box<FnBox(LoadData, LoadConsumer, Arc<MimeClassifier>, CancellationListener) + Send> {
-    box move |load_data: LoadData, start_chan, _classifier, cancel_listener| {
+              -> Box<FnBox(LoadData, LoadConsumer, CancellationListener) + Send> {
+    box move |load_data: LoadData, start_chan, cancel_listener| {
         spawn_named(format!("blob loader for {}", load_data.url), move || {
             load_blob(load_data, start_chan, filemanager, cancel_listener);
         })

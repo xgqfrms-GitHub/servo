@@ -3,19 +3,16 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 use hyper::mime::{Attr, Mime, SubLevel, TopLevel, Value};
-use mime_classifier::MimeClassifier;
 use net_traits::{LoadData, Metadata, NetworkError};
 use net_traits::LoadConsumer;
 use net_traits::ProgressMsg::{Done, Payload};
 use resource_thread::{CancellationListener, send_error, start_sending_opt};
 use rustc_serialize::base64::FromBase64;
-use std::sync::Arc;
 use url::{Position, Url};
 use url::percent_encoding::percent_decode;
 
 pub fn factory(load_data: LoadData,
                senders: LoadConsumer,
-               _classifier: Arc<MimeClassifier>,
                cancel_listener: CancellationListener) {
     // NB: we don't spawn a new thread.
     // Hypothesis: data URLs are too small for parallel base64 etc. to be worth it.

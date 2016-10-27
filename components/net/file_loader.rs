@@ -3,7 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 use about_loader;
-use mime_classifier::MimeClassifier;
 use mime_guess::guess_mime_type;
 use msg::constellation_msg::{PipelineId, ReferrerPolicy};
 use net_traits::{LoadConsumer, LoadData, LoadOrigin, Metadata, NetworkError};
@@ -15,7 +14,6 @@ use std::error::Error;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
-use std::sync::Arc;
 use url::Url;
 use util::thread::spawn_named;
 
@@ -80,7 +78,6 @@ fn get_progress_chan(load_data: LoadData,
 
 pub fn factory(load_data: LoadData,
                senders: LoadConsumer,
-               classifier: Arc<MimeClassifier>,
                cancel_listener: CancellationListener) {
     assert!(load_data.url.scheme() == "file");
     spawn_named("file_loader".to_owned(), move || {
@@ -100,7 +97,7 @@ pub fn factory(load_data: LoadData,
                 // but, we'll go for a "file not found!"
                 let url = Url::parse("about:not-found").unwrap();
                 let load_data_404 = LoadData::new(load_data.context, url, &FileLoadOrigin);
-                about_loader::factory(load_data_404, senders, classifier, cancel_listener);
+                about_loader::factory(load_data_404, senders, cancel_listener);
                 return;
             }
         };

@@ -27,7 +27,6 @@ use hyper::status::{StatusClass, StatusCode};
 use hyper_serde::Serde;
 use ipc_channel::ipc::{self, IpcSender};
 use log;
-use mime_classifier::MimeClassifier;
 use msg::constellation_msg::{PipelineId, ReferrerPolicy};
 use net_traits::{CookieSource, IncludeSubdomains, LoadConsumer, LoadContext, LoadData};
 use net_traits::{CustomResponse, CustomResponseMediator, Metadata, NetworkError};
@@ -65,9 +64,8 @@ pub fn factory(user_agent: Cow<'static, str>,
                connector: Arc<Pool<Connector>>)
                -> Box<FnBox(LoadData,
                             LoadConsumer,
-                            Arc<MimeClassifier>,
                             CancellationListener) + Send> {
-    box move |load_data: LoadData, senders, _classifier, cancel_listener| {
+    box move |load_data: LoadData, senders, cancel_listener| {
         spawn_named(format!("http_loader for {}", load_data.url), move || {
             let metadata = TimerMetadata {
                 url: load_data.url.as_str().into(),

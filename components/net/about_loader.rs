@@ -6,13 +6,11 @@ use file_loader;
 use hyper::header::ContentType;
 use hyper::mime::{Mime, SubLevel, TopLevel};
 use hyper_serde::Serde;
-use mime_classifier::MimeClassifier;
 use net_traits::{LoadConsumer, LoadData, Metadata, NetworkError};
 use net_traits::ProgressMsg::Done;
 use net_traits::response::HttpsState;
 use resource_thread::{CancellationListener, send_error, start_sending_opt};
 use std::io;
-use std::sync::Arc;
 use url::Url;
 use util::resource_files::resources_dir_path;
 
@@ -26,7 +24,6 @@ fn url_from_non_relative_scheme(load_data: &mut LoadData, filename: &str) -> io:
 
 pub fn factory(mut load_data: LoadData,
                start_chan: LoadConsumer,
-               classifier: Arc<MimeClassifier>,
                cancel_listener: CancellationListener) {
     let url = load_data.url.clone();
     let res = match url.path() {
@@ -56,7 +53,7 @@ pub fn factory(mut load_data: LoadData,
         }
     };
     if res.is_ok() {
-        file_loader::factory(load_data, start_chan, classifier, cancel_listener)
+        file_loader::factory(load_data, start_chan, cancel_listener)
     } else {
         send_error(load_data.url, NetworkError::Internal("Could not access resource folder".to_owned()), start_chan);
     }
